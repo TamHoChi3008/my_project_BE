@@ -16,3 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/api/test', function () {
+    info("HELLO WORLD");
+    return response()->json(['message' => 'Laravel OK']);
+});
