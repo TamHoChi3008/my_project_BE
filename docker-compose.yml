@@ -1,0 +1,38 @@
+version: "3.9"
+
+x-variable:
+  webPath:
+    mountDir: &mountDir /usr/local/app/
+    mountPoint: &mountPoint
+      - .:/usr/local/app/
+    documentRoot: &documentRoot /usr/local/app/public/
+
+services:
+  app:
+    working_dir: *mountDir
+    container_name: WEB_web
+    # image: webapp
+    volumes: *mountPoint
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - 8080:80
+    depends_on:
+      - db
+    env_file:
+      - .env  # Sử dụng file .env của Laravel
+  db:
+    image: "mariadb"
+    container_name: WEB_db
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "33306:3306"
+
+volumes:
+  db_data:
