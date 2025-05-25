@@ -2,7 +2,7 @@
 
 composer install --ignore-platform-reqs
 
-composer global require "laravel/installer=10.0"
+composer global require "laravel/installer:^5.0"
 
 if [ ! -f .env ]; then
     cp .env.example .env
@@ -20,4 +20,7 @@ else
     echo "any db parameters are empty."
 fi
 
-httpd -DFOREGROUND
+# CentOS/Amazon Linux:
+# httpd -DFOREGROUND
+# Debian/Ubuntu base:
+apache2-foreground

@@ -1,56 +1,27 @@
-FROM composer:2.0.12 as composer
-FROM amazonlinux:2.0.20220121.0 AS app
-ENV DOCUMENT_ROOT=/var/www/html/
-ENV HTTPD_VERSION=2.4.52-1.amzn2
-ENV PHP_VERSION=8.0.13-1.amzn2
+FROM php:8.2-apache
 
-RUN php_major_version=$PHP_VERSION \
-    && php_major_version=${php_major_version:0:3} \
-    && amazon-linux-extras enable php${php_major_version} \
-    && yum install -y \
-        gcc \
-        make \
-        freetype \
-        freetype-devel \
-        libpng \
-        libpng-devel \
-        libjpeg \
-        libjpeg-devel \
-        openssl-devel \
-        openldap-devel \
-        sqlite-devel \
-        php-ldap \
-        php-mysqli \
-        php-pdo_mysql \
-        php-pdo_sqlite \
-        php-openssl \
-        php-ftp \
-        httpd \
-        mod_ssl \
-        php \
-        php-common \
-        php-pdo \
-        php-bcmath \
-        php-mbstring \
-        php-xml \
-        php-opcache \
-        php-ldap \
-        php-ftp --setopt=protected_multilib=false \
-    && yum clean all \
-    && rm -rf /var/cache/yum/* \
-    && unset php_major_version
-
-# COPY . /app
-
+# Set timezone
 ENV TZ=Asia/Ho_Chi_Minh
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY --from=composer /usr/bin/composer /usr/bin/composer
-COPY .dockerConfig/php.ini /etc/php.ini
-COPY .dockerConfig/launchWeb.sh /launchWeb.sh
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    zip unzip git curl libpq-dev libzip-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip bcmath mbstring xml \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Chạy lệnh key:generate trong thư mục của Laravel
-# RUN php artisan key:generate
-# CMD ["php-fpm", "-F", "-R"]
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY .dockerbuild/web/php.ini /etc/php.ini
+COPY .dockerbuild/web/launchWeb.sh /launchWeb.sh
+
+# Enable mod_rewrite
+RUN a2enmod rewrite
+
+# Expose HTTP & HTTPS
+EXPOSE 80 443
+
+WORKDIR /var/www/html
+
+# set documentsRoot
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 CMD ["bash", "/launchWeb.sh"]

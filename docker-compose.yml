@@ -1,38 +1,53 @@
 version: "3.9"
 
-x-variable:
-  webPath:
-    mountDir: &mountDir /usr/local/app/
-    mountPoint: &mountPoint
-      - .:/usr/local/app/
-    documentRoot: &documentRoot /usr/local/app/public/
-
 services:
-  app:
-    working_dir: *mountDir
-    container_name: WEB_web
-    # image: webapp
-    volumes: *mountPoint
-    environment:
-      TZ: Asia/Ho_Chi_Minh
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: my_project_web_laravel
+    working_dir: /var/www/html/
     ports:
-      - 8080:80
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - db
-    env_file:
-      - .env  # Sử dụng file .env của Laravel
-  db:
-    image: "mariadb"
-    container_name: WEB_db
-    environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
-    volumes:
-      - db_data:/var/lib/mysql
-    ports:
-      - "33306:3306"
+    platform: linux/amd64
 
-volumes:
-  db_data:
+  db:
+    image: postgres:15
+    container_name:  my_project_postgres_db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: laravel
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: password
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - .dockerbuild/postgresql/data:/var/lib/postgresql/data
+
+  localstack:
+    image: localstack/localstack
+    container_name: my_project_localstack
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4571:4571"            # Optional
+    environment:
+      - SERVICES=s3,lambda,ec2,dynamodb
+      - DEBUG=1
+      - TZ=Asia/Ho_Chi_Minh
+      - EXTRA_CORS_ALLOWED_ORIGINS=http://localhost:3000
+    volumes:
+      - .dockerbuild/localstack/:/var/localstack/
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name:  my_project_mailcatcher
+    ports:
+      - "1025:1025" # SMTP
+      - "1080:1080" # Web UI
